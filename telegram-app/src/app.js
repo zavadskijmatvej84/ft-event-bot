@@ -6,9 +6,16 @@ const { Telegraf, Markup } = require("telegraf");
 const { loadConfig, saveConfig } = require("./config");
 const { createDatabase } = require("./db");
 const { buildAnarchySnapshot, buildAnarchySnapshotFromPushRows, filterAndSortEvents } = require("./event-source");
+const { attachRemoteSqliteBackup } = require("./sqlite-remote-backup");
 
 const config = loadConfig();
 const db = createDatabase(config.dbPath);
+attachRemoteSqliteBackup(db, {
+	dbPath: config.dbPath,
+	connectionString: config.databaseBackupUrl,
+	backupKey: config.databaseBackupKey,
+	logger: console
+});
 const webApp = express();
 const adminSessions = new Map();
 const siteSessions = new Map();

@@ -9,6 +9,8 @@
   "timeZone": "Europe/Moscow",
   "snapshotSourceMode": "push",
   "eventIngestToken": "generate_a_secret_token_here",
+  "databaseBackupUrl": "postgresql://USER:PASSWORD@HOST:5432/DATABASE",
+  "databaseBackupKey": "telegram-center",
   "requiredSubscriptions": [],
   "knownEvents": [
     "Air Drop"

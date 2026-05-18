@@ -16,6 +16,10 @@ services:
         value: Europe/Moscow
       - key: BOT_USERNAME
         value: Ft_eventbot
+      - key: DATABASE_BACKUP_URL
+        sync: false
+      - key: DATABASE_BACKUP_KEY
+        value: telegram-center
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PASSWORD

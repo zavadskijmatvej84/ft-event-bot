@@ -119,6 +119,8 @@ function buildDefaultConfig() {
 		timeZone: "Europe/Moscow",
 		snapshotSourceMode: "auto",
 		eventIngestToken: crypto.randomBytes(18).toString("hex"),
+		databaseBackupUrl: "",
+		databaseBackupKey: "telegram-center",
 		requiredSubscriptions: [],
 		knownEvents: []
 	};
@@ -152,7 +154,9 @@ function loadConfig() {
 		checkerLogPath: process.env.CHECKER_LOG_PATH || mergedConfig.checkerLogPath,
 		timeZone: process.env.TIME_ZONE || mergedConfig.timeZone,
 		snapshotSourceMode: process.env.SNAPSHOT_SOURCE_MODE || mergedConfig.snapshotSourceMode,
-		eventIngestToken: process.env.EVENT_INGEST_TOKEN || mergedConfig.eventIngestToken
+		eventIngestToken: process.env.EVENT_INGEST_TOKEN || mergedConfig.eventIngestToken,
+		databaseBackupUrl: process.env.DATABASE_BACKUP_URL || mergedConfig.databaseBackupUrl,
+		databaseBackupKey: process.env.DATABASE_BACKUP_KEY || mergedConfig.databaseBackupKey
 	};
 
 	return {
@@ -161,6 +165,8 @@ function loadConfig() {
 		botUsername: String(envOverrides.botUsername || "").trim().replace(/^@+/, ""),
 		snapshotSourceMode: normalizeSnapshotSourceMode(envOverrides.snapshotSourceMode),
 		eventIngestToken: String(envOverrides.eventIngestToken || "").trim(),
+		databaseBackupUrl: String(envOverrides.databaseBackupUrl || "").trim(),
+		databaseBackupKey: String(envOverrides.databaseBackupKey || "telegram-center").trim() || "telegram-center",
 		requiredSubscriptions: normalizeRequiredSubscriptions(mergedConfig.requiredSubscriptions),
 		knownEvents: (mergedConfig.knownEvents || []).map((item) => decodeMaybeMojibake(item)).filter(Boolean),
 		rootDir: ROOT_DIR,
@@ -184,6 +190,8 @@ function saveConfig(config) {
 		timeZone: config.timeZone,
 		snapshotSourceMode: normalizeSnapshotSourceMode(config.snapshotSourceMode),
 		eventIngestToken: String(config.eventIngestToken || "").trim(),
+		databaseBackupUrl: String(config.databaseBackupUrl || "").trim(),
+		databaseBackupKey: String(config.databaseBackupKey || "telegram-center").trim() || "telegram-center",
 		requiredSubscriptions: normalizeRequiredSubscriptions(config.requiredSubscriptions),
 		knownEvents: (config.knownEvents || []).map((item) => decodeMaybeMojibake(item)).filter(Boolean)
 	};
