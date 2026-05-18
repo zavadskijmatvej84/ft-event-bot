@@ -30,12 +30,6 @@
             <button class="primary-button portal-auth-button" type="submit">Выйти</button>
           </form>
         </div>
-      <% } else if (typeof isPublicEventsView !== "undefined" && isPublicEventsView) { %>
-        <div class="portal-topbar-actions">
-          <a class="nav-link <%= activePortalNav === 'events-all' ? 'active' : '' %>" href="/site/events/all">Все</a>
-          <a class="nav-link <%= activePortalNav === 'events-current' ? 'active' : '' %>" href="/site/events/current">Текущие</a>
-          <a class="nav-link <%= activePortalNav === 'events-upcoming' ? 'active' : '' %>" href="/site/events/upcoming">Предстоящие</a>
-        </div>
       <% } else { %>
         <div class="portal-topbar-actions">
           <a class="nav-link" href="/site#advantages">Преимущества</a>

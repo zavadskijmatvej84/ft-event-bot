@@ -12,8 +12,6 @@ services:
         value: 0.0.0.0
       - key: SNAPSHOT_SOURCE_MODE
         value: push
-      - key: PUBLIC_SITE_MODE
-        value: "true"
       - key: TIME_ZONE
         value: Europe/Moscow
       - key: ADMIN_USERNAME

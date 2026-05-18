@@ -46,8 +46,6 @@ const DEFAULT_USER_SETTINGS = {
 	eventFilters: []
 };
 
-const PUBLIC_SITE_MODE = /^(1|true|yes|on)$/i.test(String(process.env.PUBLIC_SITE_MODE || "").trim());
-
 const REMINDER_INTERVALS = {
 	none: 0,
 	minute: 60 * 1000,
@@ -188,32 +186,6 @@ function getPushSnapshot() {
 	return buildAnarchySnapshotFromPushRows(listEventSnapshotRowsStmt.all(), {
 		timeZone: config.timeZone
 	});
-}
-
-function buildPublicPortalState(snapshot = getSnapshot()) {
-	return {
-		snapshot,
-		settings: { ...DEFAULT_USER_SETTINGS },
-		subscriptions: listEnabledSubscriptions(),
-		linkInstructions: "",
-		webUser: null,
-		linkedTelegramUser: null,
-		subscriptionState: {
-			subscribed: true,
-			hasRequirements: false,
-			missingCount: 0,
-			missing: [],
-			unverifiableCount: 0,
-			unverifiable: []
-		},
-		accessState: {
-			allowed: true,
-			tone: "ok",
-			title: "",
-			description: ""
-		},
-		isPublicEventsView: true
-	};
 }
 
 function getRequestBearerToken(req) {
@@ -1169,20 +1141,6 @@ async function buildPortalPageState(webUser, snapshot = getSnapshot()) {
 	};
 }
 
-async function getEventsPortalState(req) {
-	const session = getSiteSession(req);
-	const webUser = getSiteUserBySession(session);
-	if (webUser) {
-		return buildPortalPageState(webUser);
-	}
-
-	if (PUBLIC_SITE_MODE) {
-		return buildPublicPortalState();
-	}
-
-	return null;
-}
-
 function formatEventCards(events) {
 	return events;
 }
@@ -1584,13 +1542,9 @@ webApp.post("/logout", requireAdmin, (req, res) => {
 });
 
 webApp.get("/", async (req, res) => {
-	if (PUBLIC_SITE_MODE && !adminSessions.get(getCookie(req, "panel_session"))) {
-		return res.redirect("/site/events/all");
-	}
-
 	const session = adminSessions.get(getCookie(req, "panel_session"));
 	if (!session) {
-		return res.redirect("/login");
+		return res.redirect("/site");
 	}
 
 	const snapshot = getSnapshot();
@@ -1625,6 +1579,10 @@ webApp.get("/", async (req, res) => {
 		latestUsers,
 		requiredSubscriptions: subscriptions
 	});
+});
+
+webApp.get("/admin", requireAdmin, async (req, res) => {
+	return res.redirect("/");
 });
 
 webApp.get("/users", requireAdmin, async (req, res) => {
@@ -1942,10 +1900,6 @@ webApp.get(["/eventbotfuntime", "/eventbotfuntime/", "/eventbotfuntime/site"], (
 });
 
 webApp.get("/site", (req, res) => {
-	if (PUBLIC_SITE_MODE) {
-		return res.redirect("/site/events/all");
-	}
-
 	const session = getSiteSession(req);
 	const webUser = getSiteUserBySession(session);
 	const snapshot = getSnapshot();
@@ -1983,12 +1937,8 @@ webApp.get("/site/events", (req, res) => {
 	res.redirect("/site/events/all");
 });
 
-webApp.get("/site/events/all", async (req, res) => {
-	const portalState = await getEventsPortalState(req);
-	if (!portalState) {
-		return res.redirect("/site/login");
-	}
-
+webApp.get("/site/events/all", requireSiteUser, async (req, res) => {
+	const portalState = await buildPortalPageState(req.webUser);
 	const events = portalState.accessState.allowed
 		? formatEventCards(filterAndSortEvents(portalState.snapshot, portalState.settings, "all"))
 		: [];
@@ -2004,12 +1954,8 @@ webApp.get("/site/events/all", async (req, res) => {
 	});
 });
 
-webApp.get("/site/events/current", async (req, res) => {
-	const portalState = await getEventsPortalState(req);
-	if (!portalState) {
-		return res.redirect("/site/login");
-	}
-
+webApp.get("/site/events/current", requireSiteUser, async (req, res) => {
+	const portalState = await buildPortalPageState(req.webUser);
 	const events = portalState.accessState.allowed
 		? formatEventCards(filterAndSortEvents(portalState.snapshot, portalState.settings, "current"))
 		: [];
@@ -2025,12 +1971,8 @@ webApp.get("/site/events/current", async (req, res) => {
 	});
 });
 
-webApp.get("/site/events/upcoming", async (req, res) => {
-	const portalState = await getEventsPortalState(req);
-	if (!portalState) {
-		return res.redirect("/site/login");
-	}
-
+webApp.get("/site/events/upcoming", requireSiteUser, async (req, res) => {
+	const portalState = await buildPortalPageState(req.webUser);
 	const events = portalState.accessState.allowed
 		? formatEventCards(filterAndSortEvents(portalState.snapshot, portalState.settings, "upcoming"))
 		: [];
@@ -2099,7 +2041,6 @@ function launch() {
 		console.log(`Snapshot source mode: ${config.snapshotSourceMode}`);
 		console.log(`Event ingest: ${config.eventIngestToken ? "enabled" : "disabled"}`);
 		console.log(`Telegram bot: ${String(config.botToken || "").trim() ? "enabled" : "disabled"}`);
-		console.log(`Public site mode: ${PUBLIC_SITE_MODE ? "enabled" : "disabled"}`);
 	});
 
 	setInterval(() => {
