@@ -119,6 +119,7 @@ function buildDefaultConfig() {
 		timeZone: "Europe/Moscow",
 		snapshotSourceMode: "auto",
 		eventIngestToken: crypto.randomBytes(18).toString("hex"),
+		siteBaseUrl: "https://funtime-event-bot.onrender.com",
 		databaseBackupUrl: "",
 		databaseBackupKey: "telegram-center",
 		requiredSubscriptions: [],
@@ -155,6 +156,7 @@ function loadConfig() {
 		timeZone: process.env.TIME_ZONE || mergedConfig.timeZone,
 		snapshotSourceMode: process.env.SNAPSHOT_SOURCE_MODE || mergedConfig.snapshotSourceMode,
 		eventIngestToken: process.env.EVENT_INGEST_TOKEN || mergedConfig.eventIngestToken,
+		siteBaseUrl: process.env.SITE_BASE_URL || mergedConfig.siteBaseUrl,
 		databaseBackupUrl: process.env.DATABASE_BACKUP_URL || mergedConfig.databaseBackupUrl,
 		databaseBackupKey: process.env.DATABASE_BACKUP_KEY || mergedConfig.databaseBackupKey
 	};
@@ -165,6 +167,7 @@ function loadConfig() {
 		botUsername: String(envOverrides.botUsername || "").trim().replace(/^@+/, ""),
 		snapshotSourceMode: normalizeSnapshotSourceMode(envOverrides.snapshotSourceMode),
 		eventIngestToken: String(envOverrides.eventIngestToken || "").trim(),
+		siteBaseUrl: String(envOverrides.siteBaseUrl || "").trim().replace(/\/+$/, ""),
 		databaseBackupUrl: String(envOverrides.databaseBackupUrl || "").trim(),
 		databaseBackupKey: String(envOverrides.databaseBackupKey || "telegram-center").trim() || "telegram-center",
 		requiredSubscriptions: normalizeRequiredSubscriptions(mergedConfig.requiredSubscriptions),
@@ -190,6 +193,7 @@ function saveConfig(config) {
 		timeZone: config.timeZone,
 		snapshotSourceMode: normalizeSnapshotSourceMode(config.snapshotSourceMode),
 		eventIngestToken: String(config.eventIngestToken || "").trim(),
+		siteBaseUrl: String(config.siteBaseUrl || "").trim().replace(/\/+$/, ""),
 		databaseBackupUrl: String(config.databaseBackupUrl || "").trim(),
 		databaseBackupKey: String(config.databaseBackupKey || "telegram-center").trim() || "telegram-center",
 		requiredSubscriptions: normalizeRequiredSubscriptions(config.requiredSubscriptions),

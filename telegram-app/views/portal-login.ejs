@@ -2,31 +2,14 @@
 
 <section class="portal-auth-card">
   <div class="eyebrow">Авторизация</div>
-  <h1>Вход на сайт</h1>
-  <p class="muted">Войди в аккаунт, чтобы открыть личный кабинет, настройки и страницы с ивентами.</p>
+  <h1>Вход через Telegram</h1>
+  <p class="muted">Получи код входа, отправь его боту и после проверки подписок кабинет откроется автоматически.</p>
   <% if (typeof error !== "undefined" && error) { %>
     <div class="alert"><%= error %></div>
   <% } %>
 
-  <form method="post" action="/site/login" class="stack-form">
-    <label>
-      Email
-      <input type="email" name="email" required />
-    </label>
-    <label>
-      Пароль
-      <input type="password" name="password" required />
-    </label>
-    <button class="primary-button" type="submit">Войти</button>
-  </form>
-
-  <div class="note-box">
-    <strong>Вход через Telegram-бота</strong><br />
-    <span>Сайт сгенерирует код, ты отправишь его боту, и кабинет откроется без пароля.</span>
-  </div>
-
   <form method="post" action="/site/login/bot" class="stack-form">
-    <button class="ghost-button" type="submit">Войти через Telegram-бота</button>
+    <button class="primary-button" type="submit">Получить код входа</button>
   </form>
 
   <% if (typeof botLoginCode !== "undefined" && botLoginCode) { %>
@@ -73,7 +56,7 @@
     </script>
   <% } %>
 
-  <p class="muted">Ещё нет аккаунта? <a href="/site/register">Создать</a></p>
+  <p class="muted">Отдельная регистрация больше не нужна: аккаунт создаётся автоматически после подтверждения в Telegram.</p>
 </section>
 
 </main>

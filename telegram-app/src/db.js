@@ -73,6 +73,17 @@ function createDatabase(dbPath) {
 			updated_at TEXT NOT NULL,
 			source TEXT NOT NULL DEFAULT 'bot'
 		);
+
+		CREATE TABLE IF NOT EXISTS site_login_requests (
+			code TEXT PRIMARY KEY,
+			status TEXT NOT NULL DEFAULT 'pending',
+			resolved_web_user_id INTEGER,
+			resolved_telegram_user_id TEXT,
+			created_at TEXT NOT NULL,
+			expires_at TEXT NOT NULL,
+			completed_at TEXT,
+			FOREIGN KEY(resolved_web_user_id) REFERENCES web_users(id)
+		);
 	`);
 
 	ensureColumn(db, "users", "block_reason", "TEXT NOT NULL DEFAULT ''");

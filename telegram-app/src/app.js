@@ -19,7 +19,6 @@ attachRemoteSqliteBackup(db, {
 const webApp = express();
 const adminSessions = new Map();
 const siteSessions = new Map();
-const siteLoginRequests = new Map();
 
 function createDisabledBot() {
 	const resolved = Promise.resolve();
@@ -105,6 +104,43 @@ const upsertEventSnapshotStmt = db.prepare(`
 		raw_lines_json = excluded.raw_lines_json,
 		updated_at = excluded.updated_at,
 		source = excluded.source
+`);
+
+const getSiteLoginRequestStmt = db.prepare(`
+	SELECT code, status, resolved_web_user_id, resolved_telegram_user_id, created_at, expires_at, completed_at
+	FROM site_login_requests
+	WHERE code = ?
+`);
+
+const upsertSiteLoginRequestStmt = db.prepare(`
+	INSERT INTO site_login_requests (code, status, created_at, expires_at)
+	VALUES (?, 'pending', ?, ?)
+	ON CONFLICT(code) DO UPDATE SET
+		status = excluded.status,
+		created_at = excluded.created_at,
+		expires_at = excluded.expires_at,
+		resolved_web_user_id = NULL,
+		resolved_telegram_user_id = NULL,
+		completed_at = NULL
+`);
+
+const completeSiteLoginRequestStmt = db.prepare(`
+	UPDATE site_login_requests
+	SET status = 'completed',
+		resolved_web_user_id = ?,
+		resolved_telegram_user_id = ?,
+		completed_at = ?
+	WHERE code = ?
+`);
+
+const deleteSiteLoginRequestStmt = db.prepare(`
+	DELETE FROM site_login_requests
+	WHERE code = ?
+`);
+
+const cleanupExpiredSiteLoginRequestsStmt = db.prepare(`
+	DELETE FROM site_login_requests
+	WHERE expires_at < ?
 `);
 
 function nowIso() {
@@ -1128,12 +1164,7 @@ function getBotLoginInstructions(code) {
 }
 
 function cleanupExpiredSiteLoginRequests() {
-	const now = Date.now();
-	for (const [code, request] of siteLoginRequests.entries()) {
-		if (!request.expiresAt || Date.parse(request.expiresAt) < now) {
-			siteLoginRequests.delete(code);
-		}
-	}
+	cleanupExpiredSiteLoginRequestsStmt.run(nowIso());
 }
 
 function getActiveSiteLoginRequest(code) {
@@ -1143,7 +1174,23 @@ function getActiveSiteLoginRequest(code) {
 		return null;
 	}
 
-	return siteLoginRequests.get(cleanCode) || null;
+	const loginRequest = getSiteLoginRequestStmt.get(cleanCode);
+	if (!loginRequest || Date.parse(loginRequest.expires_at) < Date.now()) {
+		if (loginRequest) {
+			deleteSiteLoginRequestStmt.run(cleanCode);
+		}
+		return null;
+	}
+
+	return {
+		code: loginRequest.code,
+		status: loginRequest.status,
+		webUserId: loginRequest.resolved_web_user_id,
+		telegramUserId: loginRequest.resolved_telegram_user_id,
+		createdAt: loginRequest.created_at,
+		expiresAt: loginRequest.expires_at,
+		completedAt: loginRequest.completed_at
+	};
 }
 
 function createSiteSession(res, webUserId) {
@@ -1302,20 +1349,50 @@ async function handleLinkCode(ctx, code) {
 
 async function handleBotLoginCode(ctx, code) {
 	const loginRequest = getActiveSiteLoginRequest(code);
-	if (!loginRequest) {
-		await ctx.reply("РљРѕРґ РІС…РѕРґР° РЅРµ РЅР°Р№РґРµРЅ РёР»Рё СѓР¶Рµ РёСЃС‚РµРє. РЎРіРµРЅРµСЂРёСЂСѓР№ РЅРѕРІС‹Р№ РєРѕРґ РЅР° СЃР°Р№С‚Рµ.");
-		return;
-	}
-
 	const telegramUser = ctx.state.user;
 	if (!(await checkRequiredSubscriptions(ctx, telegramUser))) {
 		return;
 	}
 
+	const remoteConfirmUrl = String(config.siteBaseUrl || "").trim()
+		? `${String(config.siteBaseUrl || "").trim().replace(/\/+$/, "")}/api/site-login/confirm`
+		: "";
+	const authToken = String(config.eventIngestToken || "").trim();
+
+	if (remoteConfirmUrl && authToken) {
+		try {
+			const response = await fetch(remoteConfirmUrl, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"Authorization": `Bearer ${authToken}`
+				},
+				body: JSON.stringify({
+					code: String(code || "").trim().toUpperCase(),
+					telegramUser: {
+						id: telegramUser.telegram_id,
+						username: telegramUser.username,
+						first_name: telegramUser.first_name,
+						last_name: telegramUser.last_name
+					}
+				})
+			});
+
+			if (response.ok) {
+				const payload = await response.json().catch(() => ({}));
+				await ctx.reply(`Р’С…РѕРґ РїРѕРґС‚РІРµСЂР¶РґС‘РЅ. Р’РµСЂРЅРёСЃСЊ РЅР° СЃР°Р№С‚, РєР°Р±РёРЅРµС‚ ${(payload.displayName || telegramUser.first_name || "пользователя")} РѕС‚РєСЂРѕРµС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.`);
+				return;
+			}
+		} catch {}
+	}
+
+	if (!loginRequest) {
+		await ctx.reply("РљРѕРґ РІС…РѕРґР° РЅРµ РЅР°Р№РґРµРЅ РёР»Рё СѓР¶Рµ РёСЃС‚РµРє. РЎРіРµРЅРµСЂРёСЂСѓР№ РЅРѕРІС‹Р№ РєРѕРґ РЅР° СЃР°Р№С‚Рµ.");
+		return;
+	}
+
 	const webUser = ensureWebUserForTelegramLogin(telegramUser);
-	loginRequest.status = "completed";
-	loginRequest.completedAt = nowIso();
-	loginRequest.webUserId = webUser.id;
+	completeSiteLoginRequestStmt.run(webUser.id, String(telegramUser.telegram_id), nowIso(), loginRequest.code);
 
 	await ctx.reply(`Р’С…РѕРґ РїРѕРґС‚РІРµСЂР¶РґС‘РЅ. Р’РµСЂРЅРёСЃСЊ РЅР° СЃР°Р№С‚, РєР°Р±РёРЅРµС‚ ${webUser.display_name} РѕС‚РєСЂРѕРµС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.`);
 }
@@ -1669,6 +1746,45 @@ webApp.post("/api/ingest/event-delay", (req, res) => {
 	});
 });
 
+webApp.post("/api/site-login/confirm", async (req, res) => {
+	const expectedToken = String(config.eventIngestToken || "").trim();
+	if (!expectedToken) {
+		return res.status(503).json({ ok: false, error: "site_login_disabled" });
+	}
+
+	const token = getRequestBearerToken(req);
+	if (token !== expectedToken) {
+		return res.status(401).json({ ok: false, error: "invalid_token" });
+	}
+
+	const code = String(req.body?.code || "").trim().toUpperCase();
+	const loginRequest = getActiveSiteLoginRequest(code);
+	if (!loginRequest) {
+		return res.status(404).json({ ok: false, error: "invalid_or_expired_code" });
+	}
+
+	const telegramUser = req.body?.telegramUser || {};
+	const telegramId = String(telegramUser.id || "").trim();
+	if (!telegramId) {
+		return res.status(400).json({ ok: false, error: "missing_telegram_id" });
+	}
+
+	const siteTelegramUser = upsertUser({
+		id: telegramId,
+		username: String(telegramUser.username || "").trim(),
+		first_name: String(telegramUser.first_name || "").trim(),
+		last_name: String(telegramUser.last_name || "").trim()
+	});
+	const webUser = ensureWebUserForTelegramLogin(siteTelegramUser);
+	completeSiteLoginRequestStmt.run(webUser.id, String(siteTelegramUser.telegram_id), nowIso(), loginRequest.code);
+
+	return res.json({
+		ok: true,
+		status: "completed",
+		displayName: webUser.display_name
+	});
+});
+
 webApp.get("/login", (req, res) => {
 	renderAdmin(res, "login", { error: "" });
 });
@@ -1962,23 +2078,7 @@ webApp.get("/site/login", (req, res) => {
 });
 
 webApp.post("/site/login", (req, res) => {
-	const email = String(req.body.email || "").trim().toLowerCase();
-	const password = String(req.body.password || "");
-	const webUser = db.prepare("SELECT * FROM web_users WHERE lower(email) = ?").get(email);
-
-	if (!webUser || !verifyPassword(password, webUser.password_hash)) {
-		return renderPortal(res, "portal-login", {
-			error: "РќРµРІРµСЂРЅС‹Р№ email РёР»Рё РїР°СЂРѕР»СЊ.",
-			botLoginCode: "",
-			botLoginInstructions: "",
-			botLoginStatusUrl: "",
-			botLoginExpiresAt: ""
-		});
-	}
-
-	db.prepare("UPDATE web_users SET last_login_at = ? WHERE id = ?").run(nowIso(), webUser.id);
-	createSiteSession(res, webUser.id);
-	return res.redirect("/site/app");
+	return res.redirect("/site/login");
 });
 
 webApp.post("/site/login/bot", (req, res) => {
@@ -1988,12 +2088,7 @@ webApp.post("/site/login/bot", (req, res) => {
 
 	const code = createBotLoginCode();
 	const expiresAt = new Date(Date.now() + 20 * 60 * 1000).toISOString();
-	siteLoginRequests.set(code, {
-		code,
-		status: "pending",
-		createdAt: nowIso(),
-		expiresAt
-	});
+	upsertSiteLoginRequestStmt.run(code, nowIso(), expiresAt);
 
 	renderPortal(res, "portal-login", {
 		error: "",
@@ -2015,7 +2110,7 @@ webApp.get("/site/login/bot/status/:code", (req, res) => {
 
 	if (loginRequest.status === "completed" && loginRequest.webUserId) {
 		createSiteSession(res, loginRequest.webUserId);
-		siteLoginRequests.delete(loginRequest.code);
+		deleteSiteLoginRequestStmt.run(loginRequest.code);
 		return res.json({
 			ok: true,
 			status: "completed",
@@ -2031,69 +2126,11 @@ webApp.get("/site/login/bot/status/:code", (req, res) => {
 });
 
 webApp.get("/site/register", (req, res) => {
-	if (getSiteUserBySession(getSiteSession(req))) {
-		return res.redirect("/site/app");
-	}
-
-	renderPortal(res, "portal-register", { error: "", values: {} });
+	return res.redirect("/site/login");
 });
 
 webApp.post("/site/register", (req, res) => {
-	const displayName = String(req.body.displayName || "").trim();
-	const email = String(req.body.email || "").trim().toLowerCase();
-	const password = String(req.body.password || "");
-	const confirmPassword = String(req.body.confirmPassword || "");
-
-	if (!displayName || !email || !password) {
-		return renderPortal(res, "portal-register", {
-			error: "Р—Р°РїРѕР»РЅРё РІСЃРµ РїРѕР»СЏ.",
-			values: { displayName, email }
-		});
-	}
-
-	if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-		return renderPortal(res, "portal-register", {
-			error: "РЈРєР°Р¶Рё РєРѕСЂСЂРµРєС‚РЅС‹Р№ email.",
-			values: { displayName, email }
-		});
-	}
-
-	if (password.length < 6) {
-		return renderPortal(res, "portal-register", {
-			error: "РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РЅРµ РєРѕСЂРѕС‡Рµ 6 СЃРёРјРІРѕР»РѕРІ.",
-			values: { displayName, email }
-		});
-	}
-
-	if (password !== confirmPassword) {
-		return renderPortal(res, "portal-register", {
-			error: "РџР°СЂРѕР»Рё РЅРµ СЃРѕРІРїР°РґР°СЋС‚.",
-			values: { displayName, email }
-		});
-	}
-
-	const existing = db.prepare("SELECT id FROM web_users WHERE lower(email) = ?").get(email);
-	if (existing) {
-		return renderPortal(res, "portal-register", {
-			error: "РўР°РєРѕР№ email СѓР¶Рµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅ.",
-			values: { displayName, email }
-		});
-	}
-
-	const result = db.prepare(`
-		INSERT INTO web_users (email, display_name, password_hash, settings_json, created_at, last_login_at)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`).run(
-		email,
-		displayName,
-		hashPassword(password),
-		JSON.stringify(DEFAULT_USER_SETTINGS),
-		nowIso(),
-		nowIso()
-	);
-
-	createSiteSession(res, result.lastInsertRowid);
-	return res.redirect("/site/app");
+	return res.redirect("/site/login");
 });
 
 webApp.post("/site/logout", requireSiteUser, (req, res) => {

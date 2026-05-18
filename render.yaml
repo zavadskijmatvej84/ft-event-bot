@@ -16,6 +16,8 @@ services:
         value: Europe/Moscow
       - key: BOT_USERNAME
         value: Ft_eventbot
+      - key: SITE_BASE_URL
+        value: https://funtime-event-bot.onrender.com
       - key: DATABASE_BACKUP_URL
         sync: false
       - key: DATABASE_BACKUP_KEY
