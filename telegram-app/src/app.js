@@ -9,10 +9,35 @@ const { buildAnarchySnapshot, buildAnarchySnapshotFromPushRows, filterAndSortEve
 
 const config = loadConfig();
 const db = createDatabase(config.dbPath);
-const bot = new Telegraf(config.botToken);
 const webApp = express();
 const adminSessions = new Map();
 const siteSessions = new Map();
+
+function createDisabledBot() {
+	const resolved = Promise.resolve();
+	return {
+		telegram: {
+			sendMessage: async () => {
+				throw new Error("telegram_bot_disabled");
+			},
+			getChatMember: async () => {
+				throw new Error("telegram_bot_disabled");
+			}
+		},
+		use: () => {},
+		command: () => {},
+		start: () => {},
+		action: () => {},
+		on: () => {},
+		catch: () => {},
+		launch: () => resolved,
+		stop: () => {}
+	};
+}
+
+const bot = String(config.botToken || "").trim()
+	? new Telegraf(config.botToken)
+	: createDisabledBot();
 
 const DEFAULT_USER_SETTINGS = {
 	activeOnly: false,
@@ -2006,6 +2031,7 @@ function launch() {
 		console.log(`Checker log: ${config.checkerLogPath}`);
 		console.log(`Snapshot source mode: ${config.snapshotSourceMode}`);
 		console.log(`Event ingest: ${config.eventIngestToken ? "enabled" : "disabled"}`);
+		console.log(`Telegram bot: ${String(config.botToken || "").trim() ? "enabled" : "disabled"}`);
 	});
 
 	setInterval(() => {
@@ -2014,13 +2040,15 @@ function launch() {
 		});
 	}, 60 * 1000);
 
-	bot.launch()
-		.then(() => {
-			console.log("Telegram bot is running.");
-		})
-		.catch((error) => {
-			console.error("Telegram bot launch failed:", error.message);
-		});
+	if (String(config.botToken || "").trim()) {
+		bot.launch()
+			.then(() => {
+				console.log("Telegram bot is running.");
+			})
+			.catch((error) => {
+				console.error("Telegram bot launch failed:", error.message);
+			});
+	}
 }
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
