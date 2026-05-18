@@ -19,6 +19,7 @@ attachRemoteSqliteBackup(db, {
 const webApp = express();
 const adminSessions = new Map();
 const siteSessions = new Map();
+const siteLoginRequests = new Map();
 
 function createDisabledBot() {
 	const resolved = Promise.resolve();
@@ -1065,19 +1066,31 @@ function createLinkCode() {
 	return crypto.randomBytes(4).toString("hex").toUpperCase();
 }
 
+function createBotLoginCode() {
+	return crypto.randomBytes(5).toString("hex").toUpperCase();
+}
+
 function getStartPayload(ctx) {
 	const text = String(ctx.message?.text || "");
 	const parts = text.split(/\s+/);
 	return parts.length > 1 ? parts.slice(1).join(" ").trim() : "";
 }
 
-function getBotLinkUrl(code) {
+function getBotStartUrl(action, code) {
 	const botUsername = String(config.botUsername || "").trim().replace(/^@+/, "");
-	if (!botUsername || !code) {
+	if (!botUsername || !code || !action) {
 		return "";
 	}
 
-	return `https://t.me/${encodeURIComponent(botUsername)}?start=${encodeURIComponent(`link_${code}`)}`;
+	return `https://t.me/${encodeURIComponent(botUsername)}?start=${encodeURIComponent(`${action}_${code}`)}`;
+}
+
+function getBotLinkUrl(code) {
+	return getBotStartUrl("link", code);
+}
+
+function getBotLoginUrl(code) {
+	return getBotStartUrl("login", code);
 }
 
 function getLinkInstructions(code) {
@@ -1095,6 +1108,89 @@ function getLinkInstructions(code) {
 	}
 
 	return steps.join("<br />");
+}
+
+function getBotLoginInstructions(code) {
+	const botLoginUrl = getBotLoginUrl(code);
+	const steps = [
+		botLoginUrl
+			? `1. <a href="${escapeHtml(botLoginUrl)}" target="_blank" rel="noreferrer">Открыть Telegram-бота для входа</a>.`
+			: "1. Открой Telegram-бота.",
+		`2. Отправь ему команду <code>/login ${escapeHtml(code)}</code>.`,
+		"3. После подтверждения сайт автоматически откроет кабинет."
+	];
+
+	if (botLoginUrl) {
+		steps.splice(1, 0, `Или сразу открой deep-link: <a href="${escapeHtml(botLoginUrl)}" target="_blank" rel="noreferrer">${escapeHtml(botLoginUrl)}</a>.`);
+	}
+
+	return steps.join("<br />");
+}
+
+function cleanupExpiredSiteLoginRequests() {
+	const now = Date.now();
+	for (const [code, request] of siteLoginRequests.entries()) {
+		if (!request.expiresAt || Date.parse(request.expiresAt) < now) {
+			siteLoginRequests.delete(code);
+		}
+	}
+}
+
+function getActiveSiteLoginRequest(code) {
+	cleanupExpiredSiteLoginRequests();
+	const cleanCode = String(code || "").trim().toUpperCase();
+	if (!cleanCode) {
+		return null;
+	}
+
+	return siteLoginRequests.get(cleanCode) || null;
+}
+
+function createSiteSession(res, webUserId) {
+	const token = randomToken();
+	siteSessions.set(token, { webUserId, createdAt: nowIso() });
+	setCookie(res, "site_session", token);
+	return token;
+}
+
+function ensureWebUserForTelegramLogin(telegramUser) {
+	const existingLinked = db.prepare("SELECT * FROM web_users WHERE linked_telegram_user_id = ?").get(telegramUser.id);
+	if (existingLinked) {
+		db.prepare("UPDATE web_users SET last_login_at = ? WHERE id = ?").run(nowIso(), existingLinked.id);
+		return existingLinked;
+	}
+
+	const fallbackEmail = `tg-${telegramUser.telegram_id}@telegram.local`;
+	const existingByEmail = db.prepare("SELECT * FROM web_users WHERE lower(email) = ?").get(fallbackEmail.toLowerCase());
+	if (existingByEmail) {
+		db.prepare(`
+			UPDATE web_users
+			SET linked_telegram_user_id = ?, last_login_at = ?
+			WHERE id = ?
+		`).run(telegramUser.id, nowIso(), existingByEmail.id);
+		return db.prepare("SELECT * FROM web_users WHERE id = ?").get(existingByEmail.id);
+	}
+
+	const displayName = String(
+		telegramUser.first_name
+		|| telegramUser.username
+		|| `Telegram ${telegramUser.telegram_id}`
+	).trim();
+
+	const result = db.prepare(`
+		INSERT INTO web_users (email, display_name, password_hash, settings_json, linked_telegram_user_id, created_at, last_login_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`).run(
+		fallbackEmail,
+		displayName,
+		hashPassword(randomToken(24)),
+		JSON.stringify(DEFAULT_USER_SETTINGS),
+		telegramUser.id,
+		nowIso(),
+		nowIso()
+	);
+
+	return db.prepare("SELECT * FROM web_users WHERE id = ?").get(result.lastInsertRowid);
 }
 
 function buildPortalAccessState(webUser, linkedTelegramUser, subscriptionState) {
@@ -1204,6 +1300,26 @@ async function handleLinkCode(ctx, code) {
 	await ctx.reply("Telegram СѓСЃРїРµС€РЅРѕ РїСЂРёРІСЏР·Р°РЅ Рє СЃР°Р№С‚Сѓ. Р’РµСЂРЅРёСЃСЊ РЅР° СЃР°Р№С‚ Рё РѕР±РЅРѕРІРё СЃС‚СЂР°РЅРёС†Сѓ.");
 }
 
+async function handleBotLoginCode(ctx, code) {
+	const loginRequest = getActiveSiteLoginRequest(code);
+	if (!loginRequest) {
+		await ctx.reply("РљРѕРґ РІС…РѕРґР° РЅРµ РЅР°Р№РґРµРЅ РёР»Рё СѓР¶Рµ РёСЃС‚РµРє. РЎРіРµРЅРµСЂРёСЂСѓР№ РЅРѕРІС‹Р№ РєРѕРґ РЅР° СЃР°Р№С‚Рµ.");
+		return;
+	}
+
+	const telegramUser = ctx.state.user;
+	if (!(await checkRequiredSubscriptions(ctx, telegramUser))) {
+		return;
+	}
+
+	const webUser = ensureWebUserForTelegramLogin(telegramUser);
+	loginRequest.status = "completed";
+	loginRequest.completedAt = nowIso();
+	loginRequest.webUserId = webUser.id;
+
+	await ctx.reply(`Р’С…РѕРґ РїРѕРґС‚РІРµСЂР¶РґС‘РЅ. Р’РµСЂРЅРёСЃСЊ РЅР° СЃР°Р№С‚, РєР°Р±РёРЅРµС‚ ${webUser.display_name} РѕС‚РєСЂРѕРµС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.`);
+}
+
 bot.use(async (ctx, next) => {
 	if (!ctx.from) {
 		return next();
@@ -1264,10 +1380,21 @@ bot.command("link", async (ctx) => {
 	await handleLinkCode(ctx, code);
 });
 
+bot.command("login", async (ctx) => {
+	const raw = String(ctx.message?.text || "");
+	const code = raw.replace(/^\/login(?:@\w+)?/i, "").trim();
+	await handleBotLoginCode(ctx, code);
+});
+
 bot.start(async (ctx) => {
 	const payload = getStartPayload(ctx);
 	if (payload.toLowerCase().startsWith("link_")) {
 		await handleLinkCode(ctx, payload.slice(5));
+		return;
+	}
+
+	if (payload.toLowerCase().startsWith("login_")) {
+		await handleBotLoginCode(ctx, payload.slice(6));
 		return;
 	}
 
@@ -1825,7 +1952,13 @@ webApp.get("/site/login", (req, res) => {
 		return res.redirect("/site/app");
 	}
 
-	renderPortal(res, "portal-login", { error: "" });
+	renderPortal(res, "portal-login", {
+		error: "",
+		botLoginCode: "",
+		botLoginInstructions: "",
+		botLoginStatusUrl: "",
+		botLoginExpiresAt: ""
+	});
 });
 
 webApp.post("/site/login", (req, res) => {
@@ -1835,15 +1968,66 @@ webApp.post("/site/login", (req, res) => {
 
 	if (!webUser || !verifyPassword(password, webUser.password_hash)) {
 		return renderPortal(res, "portal-login", {
-			error: "РќРµРІРµСЂРЅС‹Р№ email РёР»Рё РїР°СЂРѕР»СЊ."
+			error: "РќРµРІРµСЂРЅС‹Р№ email РёР»Рё РїР°СЂРѕР»СЊ.",
+			botLoginCode: "",
+			botLoginInstructions: "",
+			botLoginStatusUrl: "",
+			botLoginExpiresAt: ""
 		});
 	}
 
 	db.prepare("UPDATE web_users SET last_login_at = ? WHERE id = ?").run(nowIso(), webUser.id);
-	const token = randomToken();
-	siteSessions.set(token, { webUserId: webUser.id, createdAt: nowIso() });
-	setCookie(res, "site_session", token);
+	createSiteSession(res, webUser.id);
 	return res.redirect("/site/app");
+});
+
+webApp.post("/site/login/bot", (req, res) => {
+	if (getSiteUserBySession(getSiteSession(req))) {
+		return res.redirect("/site/app");
+	}
+
+	const code = createBotLoginCode();
+	const expiresAt = new Date(Date.now() + 20 * 60 * 1000).toISOString();
+	siteLoginRequests.set(code, {
+		code,
+		status: "pending",
+		createdAt: nowIso(),
+		expiresAt
+	});
+
+	renderPortal(res, "portal-login", {
+		error: "",
+		botLoginCode: code,
+		botLoginInstructions: getBotLoginInstructions(code),
+		botLoginStatusUrl: `/site/login/bot/status/${encodeURIComponent(code)}`,
+		botLoginExpiresAt: expiresAt
+	});
+});
+
+webApp.get("/site/login/bot/status/:code", (req, res) => {
+	const loginRequest = getActiveSiteLoginRequest(req.params.code);
+	if (!loginRequest) {
+		return res.json({
+			ok: false,
+			status: "expired"
+		});
+	}
+
+	if (loginRequest.status === "completed" && loginRequest.webUserId) {
+		createSiteSession(res, loginRequest.webUserId);
+		siteLoginRequests.delete(loginRequest.code);
+		return res.json({
+			ok: true,
+			status: "completed",
+			redirect: "/site/app"
+		});
+	}
+
+	return res.json({
+		ok: true,
+		status: "pending",
+		expiresAt: loginRequest.expiresAt
+	});
 });
 
 webApp.get("/site/register", (req, res) => {
@@ -1908,9 +2092,7 @@ webApp.post("/site/register", (req, res) => {
 		nowIso()
 	);
 
-	const token = randomToken();
-	siteSessions.set(token, { webUserId: result.lastInsertRowid, createdAt: nowIso() });
-	setCookie(res, "site_session", token);
+	createSiteSession(res, result.lastInsertRowid);
 	return res.redirect("/site/app");
 });
 

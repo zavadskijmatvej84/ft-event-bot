@@ -7,6 +7,7 @@
   <% if (typeof error !== "undefined" && error) { %>
     <div class="alert"><%= error %></div>
   <% } %>
+
   <form method="post" action="/site/login" class="stack-form">
     <label>
       Email
@@ -18,7 +19,61 @@
     </label>
     <button class="primary-button" type="submit">Войти</button>
   </form>
-  <p class="muted">Еще нет аккаунта? <a href="/site/register">Создать</a></p>
+
+  <div class="note-box">
+    <strong>Вход через Telegram-бота</strong><br />
+    <span>Сайт сгенерирует код, ты отправишь его боту, и кабинет откроется без пароля.</span>
+  </div>
+
+  <form method="post" action="/site/login/bot" class="stack-form">
+    <button class="ghost-button" type="submit">Войти через Telegram-бота</button>
+  </form>
+
+  <% if (typeof botLoginCode !== "undefined" && botLoginCode) { %>
+    <div class="note-box">
+      <strong>Код входа:</strong> <code><%= botLoginCode %></code><br />
+      <span><%- botLoginInstructions %></span>
+      <div class="muted" id="bot-login-status-text">Ждём подтверждение от бота...</div>
+    </div>
+    <script>
+      (function () {
+        const statusUrl = <%- JSON.stringify(typeof botLoginStatusUrl !== "undefined" ? botLoginStatusUrl : "") %>;
+        const statusNode = document.getElementById("bot-login-status-text");
+        if (!statusUrl || !statusNode) {
+          return;
+        }
+
+        async function checkStatus() {
+          try {
+            const response = await fetch(statusUrl, {
+              headers: { "Accept": "application/json" },
+              credentials: "same-origin"
+            });
+            const data = await response.json();
+            if (data.status === "completed" && data.redirect) {
+              statusNode.textContent = "Вход подтверждён. Открываем кабинет...";
+              window.location.href = data.redirect;
+              return;
+            }
+
+            if (data.status === "expired") {
+              statusNode.textContent = "Код истёк. Сгенерируй новый код на сайте.";
+              return;
+            }
+          } catch (error) {
+            statusNode.textContent = "Не удалось проверить статус входа. Попробуй обновить страницу.";
+            return;
+          }
+
+          window.setTimeout(checkStatus, 2500);
+        }
+
+        window.setTimeout(checkStatus, 1500);
+      }());
+    </script>
+  <% } %>
+
+  <p class="muted">Ещё нет аккаунта? <a href="/site/register">Создать</a></p>
 </section>
 
 </main>
