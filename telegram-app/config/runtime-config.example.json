@@ -1,5 +1,6 @@
 {
   "botToken": "PASTE_TELEGRAM_BOT_TOKEN",
+  "botUsername": "Ft_eventbot",
   "panelPort": 3080,
   "panelHost": "127.0.0.1",
   "adminUsername": "admin",
@@ -13,4 +14,3 @@
     "Air Drop"
   ]
 }
-

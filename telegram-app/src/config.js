@@ -110,6 +110,7 @@ function normalizeSnapshotSourceMode(value) {
 function buildDefaultConfig() {
 	return {
 		botToken: "",
+		botUsername: "",
 		panelPort: 3080,
 		panelHost: "127.0.0.1",
 		adminUsername: "admin",
@@ -143,6 +144,7 @@ function loadConfig() {
 
 	const envOverrides = {
 		botToken: process.env.BOT_TOKEN || mergedConfig.botToken,
+		botUsername: process.env.BOT_USERNAME || mergedConfig.botUsername,
 		panelPort: Number(process.env.PANEL_PORT || process.env.PORT || mergedConfig.panelPort),
 		panelHost: process.env.PANEL_HOST || (process.env.RENDER ? "0.0.0.0" : mergedConfig.panelHost),
 		adminUsername: process.env.ADMIN_USERNAME || mergedConfig.adminUsername,
@@ -156,6 +158,7 @@ function loadConfig() {
 	return {
 		...mergedConfig,
 		...envOverrides,
+		botUsername: String(envOverrides.botUsername || "").trim().replace(/^@+/, ""),
 		snapshotSourceMode: normalizeSnapshotSourceMode(envOverrides.snapshotSourceMode),
 		eventIngestToken: String(envOverrides.eventIngestToken || "").trim(),
 		requiredSubscriptions: normalizeRequiredSubscriptions(mergedConfig.requiredSubscriptions),
@@ -172,6 +175,7 @@ function saveConfig(config) {
 	ensureEnvironment();
 	const serializable = {
 		botToken: config.botToken,
+		botUsername: String(config.botUsername || "").trim().replace(/^@+/, ""),
 		panelPort: config.panelPort,
 		panelHost: config.panelHost,
 		adminUsername: config.adminUsername,

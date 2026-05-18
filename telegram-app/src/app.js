@@ -1064,12 +1064,30 @@ function getStartPayload(ctx) {
 	return parts.length > 1 ? parts.slice(1).join(" ").trim() : "";
 }
 
+function getBotLinkUrl(code) {
+	const botUsername = String(config.botUsername || "").trim().replace(/^@+/, "");
+	if (!botUsername || !code) {
+		return "";
+	}
+
+	return `https://t.me/${encodeURIComponent(botUsername)}?start=${encodeURIComponent(`link_${code}`)}`;
+}
+
 function getLinkInstructions(code) {
-	return [
-		"1. РћС‚РєСЂРѕР№ Telegram-Р±РѕС‚Р°.",
-		`2. РћС‚РїСЂР°РІСЊ РµРјСѓ РєРѕРјР°РЅРґСѓ <code>/link ${escapeHtml(code)}</code>.`,
-		"3. РџРѕСЃР»Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РІРµСЂРЅРёСЃСЊ РЅР° СЃР°Р№С‚ Рё РѕР±РЅРѕРІРё СЃС‚СЂР°РЅРёС†Сѓ."
-	].join("<br />");
+	const botLinkUrl = getBotLinkUrl(code);
+	const steps = [
+		botLinkUrl
+			? `1. <a href="${escapeHtml(botLinkUrl)}" target="_blank" rel="noreferrer">Открыть Telegram-бота для привязки</a>.`
+			: "1. Открой Telegram-бота.",
+		`2. Отправь ему команду <code>/link ${escapeHtml(code)}</code>.`,
+		"3. После подтверждения вернись на сайт и обнови страницу."
+	];
+
+	if (botLinkUrl) {
+		steps.splice(1, 0, `Или сразу открой deep-link: <a href="${escapeHtml(botLinkUrl)}" target="_blank" rel="noreferrer">${escapeHtml(botLinkUrl)}</a>.`);
+	}
+
+	return steps.join("<br />");
 }
 
 function buildPortalAccessState(webUser, linkedTelegramUser, subscriptionState) {
