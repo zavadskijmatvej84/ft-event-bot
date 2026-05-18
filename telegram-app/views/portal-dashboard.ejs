@@ -1,0 +1,127 @@
+<%- include("partials/portal-header", { pageTitle, webUser, activePortalNav }) %>
+<%
+  const dashboardAllEvents = Array.isArray(typeof allEvents !== "undefined" ? allEvents : null) ? allEvents : [];
+  const dashboardCurrentEvents = Array.isArray(typeof currentEvents !== "undefined" ? currentEvents : null) ? currentEvents : [];
+  const dashboardUpcomingEvents = Array.isArray(typeof upcomingEvents !== "undefined" ? upcomingEvents : null) ? upcomingEvents : [];
+%>
+
+<section class="hero portal-hero-panel">
+  <div>
+    <div class="eyebrow">Личный кабинет</div>
+    <h1>Кабинет <%= webUser.display_name %></h1>
+    <p>
+      Здесь видно статус доступа, обязательные подписки и быстрый переход к страницам с ивентами.
+      Просмотр ивентов открывается только после привязки Telegram и проверки подписок.
+    </p>
+  </div>
+  <div class="hero-meta">
+    <div class="pill">Лог обновлён: <%= snapshot.lastUpdatedAt || "нет данных" %></div>
+    <div class="pill">Анархий: <%= snapshot.rawCount %></div>
+    <div class="pill">Фильтров: <%= settings.eventFilters.length %></div>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card">
+    <div class="stat-label">Статус доступа</div>
+    <div class="stat-value stat-value-compact"><%= accessState.allowed ? "Открыт" : "Закрыт" %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Все ивенты</div>
+    <div class="stat-value"><%= dashboardAllEvents.length %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Текущие ивенты</div>
+    <div class="stat-value"><%= dashboardCurrentEvents.length %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Предстоящие ивенты</div>
+    <div class="stat-value"><%= dashboardUpcomingEvents.length %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Привязка Telegram</div>
+    <div class="stat-value stat-value-compact"><%= linkedTelegramUser ? "Есть" : "Нужна" %></div>
+  </article>
+</section>
+
+<section class="panel-grid">
+  <article class="panel-card portal-content-card">
+    <h2>Доступ к ивентам</h2>
+    <p><span class="badge <%= accessState.tone === 'ok' ? 'badge-ok' : accessState.tone === 'danger' ? 'badge-danger' : 'badge-muted' %>"><%= accessState.title %></span></p>
+    <p><%= accessState.description %></p>
+
+    <% if (linkedTelegramUser) { %>
+      <p class="muted">
+        Привязанный Telegram: <strong><%= linkedTelegramUser.telegram_id %></strong>
+        <% if (linkedTelegramUser.username) { %>
+          • @<%= linkedTelegramUser.username %>
+        <% } %>
+      </p>
+    <% } else { %>
+      <p class="muted">Telegram пока не привязан.</p>
+    <% } %>
+
+    <% if (!linkedTelegramUser) { %>
+      <form method="post" action="/site/link" class="stack-form">
+        <button class="primary-button" type="submit">Сгенерировать код привязки</button>
+      </form>
+      <% if (webUser.link_code) { %>
+        <div class="note-box">
+          <strong>Код привязки:</strong> <code><%= webUser.link_code %></code><br />
+          <span><%- linkInstructions %></span>
+        </div>
+      <% } %>
+    <% } %>
+  </article>
+
+  <article class="panel-card portal-content-card">
+    <h2>Обязательные подписки</h2>
+    <% if (!subscriptions.length) { %>
+      <p class="muted">Обязательных каналов сейчас нет.</p>
+    <% } else { %>
+      <div class="list-stack">
+        <% subscriptions.forEach((item) => { %>
+          <div class="subscription-card subscription-card-portal">
+            <div class="subscription-title"><a href="<%= item.url %>" target="_blank" rel="noreferrer"><%= item.title %></a></div>
+            <div class="subscription-meta"><%= item.url %></div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (subscriptionState.missingCount > 0) { %>
+      <div class="note-box">
+        <strong>Не хватает подписок:</strong>
+        <ul class="simple-list">
+          <% subscriptionState.missing.forEach((item) => { %>
+            <li><a href="<%= item.url %>" target="_blank" rel="noreferrer"><%= item.title %></a></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+  </article>
+
+  <article class="panel-card panel-wide portal-content-card">
+    <div class="panel-title-row">
+      <h2>Быстрый переход</h2>
+      <a class="text-link" href="/site/settings">Настройки отображения</a>
+    </div>
+    <div class="action-row action-row-start">
+      <a class="primary-button text-link-button" href="/site/events/all">Открыть все ивенты</a>
+      <a class="ghost-button text-link-button" href="/site/events/current">Открыть текущие</a>
+      <a class="ghost-button text-link-button" href="/site/events/upcoming">Открыть предстоящие</a>
+    </div>
+
+    <% if (!accessState.allowed) { %>
+      <div class="note-box">
+        Пока доступ закрыт. Как только Telegram будет привязан и все обязательные подписки подтвердятся,
+        страницы ивентов начнут показывать данные.
+      </div>
+    <% } %>
+  </article>
+</section>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %></title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="portal-body">
+  <div class="portal-shell">
+    <div class="portal-grid-mask"></div>
+    <div class="portal-ambient portal-ambient-a"></div>
+    <div class="portal-ambient portal-ambient-b"></div>
+    <header class="portal-topbar">
+      <a class="portal-brand-link" href="/site">
+        <span class="portal-brand-mark">T</span>
+        <span class="portal-brand-copy">
+          <span class="portal-brand">Torti Event</span>
+          <span class="portal-subtitle">Закрытый портал ивентов FunTime</span>
+        </span>
+      </a>
+      <% if (typeof webUser !== "undefined" && webUser) { %>
+        <div class="portal-topbar-actions">
+          <a class="nav-link <%= activePortalNav === 'account' ? 'active' : '' %>" href="/site/app">Кабинет</a>
+          <a class="nav-link <%= activePortalNav === 'events-all' ? 'active' : '' %>" href="/site/events/all">Все</a>
+          <a class="nav-link <%= activePortalNav === 'events-current' ? 'active' : '' %>" href="/site/events/current">Текущие</a>
+          <a class="nav-link <%= activePortalNav === 'events-upcoming' ? 'active' : '' %>" href="/site/events/upcoming">Предстоящие</a>
+          <a class="nav-link <%= activePortalNav === 'settings' ? 'active' : '' %>" href="/site/settings">Настройки</a>
+          <form method="post" action="/site/logout">
+            <button class="primary-button portal-auth-button" type="submit">Выйти</button>
+          </form>
+        </div>
+      <% } else { %>
+        <div class="portal-topbar-actions">
+          <a class="nav-link" href="/site#advantages">Преимущества</a>
+          <a class="nav-link" href="/site#access">Доступ</a>
+          <a class="nav-link" href="/site#channels">Каналы</a>
+          <a class="primary-button portal-auth-button text-link-button" href="/site/login">Авторизация</a>
+        </div>
+      <% } %>
+    </header>
+    <main class="portal-content">

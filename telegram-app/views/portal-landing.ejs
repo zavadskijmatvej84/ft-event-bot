@@ -1,0 +1,89 @@
+<%- include("partials/portal-header", { pageTitle, webUser, activePortalNav }) %>
+
+<section class="landing-stage" id="overview">
+  <div class="landing-stage-copy">
+    <div class="eyebrow">Закрытый event-портал</div>
+    <div class="landing-symbol">T</div>
+    <h1>Открой новые возможности для охоты за ивентами</h1>
+    <p class="landing-lead">
+      Torti Event объединяет актуальные ивенты FunTime, приватный доступ через аккаунт
+      и проверку подписок, чтобы вся нужная информация была в одном аккуратном интерфейсе.
+    </p>
+    <div class="landing-actions">
+      <% if (webUser) { %>
+        <a class="primary-button text-link-button" href="/site/app">Открыть кабинет</a>
+      <% } else { %>
+        <a class="primary-button text-link-button" href="/site/register">Создать аккаунт</a>
+        <a class="ghost-button text-link-button" href="/site/login">Войти</a>
+      <% } %>
+    </div>
+    <div class="landing-meta">
+      <div class="landing-pill">Лог обновлён: <%= snapshot.lastUpdatedAt || "нет данных" %></div>
+      <div class="landing-pill">Анархий в отслеживании: <%= snapshot.rawCount %></div>
+    </div>
+  </div>
+  <div class="landing-stage-visual" aria-hidden="true">
+    <div class="landing-mesh">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+</section>
+
+<section class="portal-feature-grid" id="advantages">
+  <article class="panel-card feature-card">
+    <div class="feature-index">01</div>
+    <h2>Актуальные данные</h2>
+    <p>Сайт берёт свежие события прямо из логов чекера и раскладывает их на текущие и предстоящие без ручного обновления.</p>
+  </article>
+  <article class="panel-card feature-card">
+    <div class="feature-index">02</div>
+    <h2>Закрытый доступ</h2>
+    <p>Сначала аккаунт, потом привязка Telegram и проверка обязательных подписок. Пока условия не выполнены, ивенты остаются скрыты.</p>
+  </article>
+  <article class="panel-card feature-card">
+    <div class="feature-index">03</div>
+    <h2>Персональные фильтры</h2>
+    <p>Каждый пользователь хранит свои настройки сортировки и отбор по типам ивентов, не мешая настройкам Telegram-бота.</p>
+  </article>
+</section>
+
+<section class="portal-showcase-grid" id="access">
+  <article class="panel-card portal-showcase-card">
+    <div class="panel-title-row">
+      <h2>Как открыть доступ</h2>
+      <span class="badge badge-muted">4 шага</span>
+    </div>
+    <div class="access-ladder">
+      <div class="access-step"><span>1</span><div><strong>Создай аккаунт</strong><p>Зарегистрируйся на сайте или войди, если аккаунт уже есть.</p></div></div>
+      <div class="access-step"><span>2</span><div><strong>Привяжи Telegram</strong><p>В личном кабинете сгенерируй код и отправь его боту.</p></div></div>
+      <div class="access-step"><span>3</span><div><strong>Подпишись на каналы</strong><p>Подтверди все обязательные Telegram-каналы, которые админ добавил в панель.</p></div></div>
+      <div class="access-step"><span>4</span><div><strong>Открой события</strong><p>После проверки доступны страницы текущих и предстоящих ивентов и персональные настройки.</p></div></div>
+    </div>
+  </article>
+
+  <article class="panel-card portal-showcase-card" id="channels">
+    <div class="panel-title-row">
+      <h2>Обязательные Telegram-каналы</h2>
+      <span class="badge badge-muted"><%= subscriptions.length %> шт.</span>
+    </div>
+    <% if (!subscriptions.length) { %>
+      <p class="muted">Администратор пока не добавил обязательные каналы. После привязки Telegram доступ откроется сразу.</p>
+    <% } else { %>
+      <div class="list-stack">
+        <% subscriptions.forEach((item) => { %>
+          <div class="subscription-card subscription-card-portal">
+            <div class="subscription-title"><a href="<%= item.url %>" target="_blank" rel="noreferrer"><%= item.title %></a></div>
+            <div class="subscription-meta"><%= item.url %></div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </article>
+</section>
+
+</main>
+</div>
+</body>
+</html>

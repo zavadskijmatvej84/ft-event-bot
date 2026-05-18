@@ -1,0 +1,25 @@
+{
+  "name": "telegram-app",
+  "version": "1.0.0",
+  "description": "Funtime event Telegram bot with admin panel",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node src/app.js",
+    "public-site": "node src/public-tunnel.js"
+  },
+  "keywords": [],
+  "author": "Codex",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "chokidar": "^5.0.0",
+    "dayjs": "^1.11.20",
+    "ejs": "^5.0.2",
+    "express": "^5.2.1",
+    "iconv-lite": "^0.7.2",
+    "localtunnel": "^2.0.2",
+    "telegraf": "^4.16.3"
+  }
+}

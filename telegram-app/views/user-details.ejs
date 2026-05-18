@@ -1,0 +1,66 @@
+<%- include("partials/header", { activeNav, pageTitle }) %>
+
+<section class="section-head">
+  <div>
+    <h1>Профиль пользователя</h1>
+    <p><strong><%= user.telegram_id %></strong> • <%= [user.first_name, user.last_name].filter(Boolean).join(" ") || "-" %> • @<%= user.username || "-" %></p>
+  </div>
+  <a class="ghost-button" href="/users">Назад к списку</a>
+</section>
+
+<section class="panel-grid">
+  <article class="panel-card">
+    <h2>Статус пользователя</h2>
+    <p><span class="badge <%= user.statusMeta.badgeClass %>"><%= user.statusMeta.label %></span></p>
+
+    <% if (user.subscriptionState.unverifiable) { %>
+      <div class="note-box">
+        Для части каналов сейчас нельзя проверить подписку. Проверь права бота в обязательных каналах.
+      </div>
+    <% } %>
+
+    <% if (user.subscriptionState.missingCount > 0) { %>
+      <div class="note-box">
+        <strong>Не хватает подписок:</strong>
+        <ul class="simple-list">
+          <% user.subscriptionState.missing.forEach((item) => { %>
+            <li><a href="<%= item.url %>" target="_blank" rel="noreferrer"><%= item.title %></a></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+
+    <form method="post" action="/users/<%= user.id %>/toggle-block" class="stack-form">
+      <input type="hidden" name="backTo" value="details" />
+      <button class="<%= user.is_blocked && user.block_reason === 'manual' ? 'ghost-button' : 'danger-button' %>" type="submit">
+        <%= user.is_blocked && user.block_reason === "manual" ? "Разблокировать пользователя" : "Заблокировать пользователя" %>
+      </button>
+    </form>
+  </article>
+
+  <article class="panel-card">
+    <h2>Отправить сообщение</h2>
+    <form method="post" action="/users/<%= user.id %>/send" class="stack-form">
+      <textarea name="text" rows="6" placeholder="Текст сообщения пользователю..." required></textarea>
+      <button class="primary-button" type="submit">Отправить</button>
+    </form>
+  </article>
+
+  <article class="panel-card panel-wide">
+    <h2>История сообщений</h2>
+    <div class="chat-log">
+      <% messages.forEach((message) => { %>
+        <div class="chat-item <%= message.direction === 'out' ? 'chat-out' : 'chat-in' %>">
+          <div class="chat-meta">
+            <span><%= message.direction === "out" ? "Бот" : "Пользователь" %></span>
+            <span><%= message.message_type %></span>
+            <span><%= message.created_at %></span>
+          </div>
+          <pre><%= message.text || "" %></pre>
+        </div>
+      <% }) %>
+    </div>
+  </article>
+</section>
+
+<%- include("partials/footer") %>

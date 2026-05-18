@@ -1,0 +1,99 @@
+<%- include("partials/header", { activeNav, pageTitle }) %>
+
+<section class="hero">
+  <div>
+    <h1>Центр управления ботом</h1>
+    <p>Здесь видно живой статус чекера, подписки, пользователей и состояние Telegram-бота.</p>
+  </div>
+  <div class="hero-meta">
+    <div class="pill">Лог: <%= snapshot.lastUpdatedAt || "нет данных" %></div>
+    <div class="pill">Анархий: <%= snapshot.rawCount %></div>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card">
+    <div class="stat-label">Пользователи</div>
+    <div class="stat-value"><%= usersCount %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Не заблокированы</div>
+    <div class="stat-value"><%= healthyUsersCount %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Подписаны</div>
+    <div class="stat-value"><%= subscribedUsersCount %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Не подписаны</div>
+    <div class="stat-value"><%= notSubscribedUsersCount %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Заблокированы админом</div>
+    <div class="stat-value"><%= manualBlockedUsersCount %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Сообщений в истории</div>
+    <div class="stat-value"><%= messagesCount %></div>
+  </article>
+  <article class="stat-card">
+    <div class="stat-label">Обязательных подписок</div>
+    <div class="stat-value"><%= requiredSubscriptions.length %></div>
+  </article>
+</section>
+
+<section class="panel-grid">
+  <article class="panel-card">
+    <div class="panel-title-row">
+      <h2>Последние пользователи</h2>
+      <a class="text-link" href="/users">Открыть список</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Ник</th>
+            <th>Имя</th>
+            <th>Статус</th>
+            <th>Последняя активность</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% latestUsers.forEach((user) => { %>
+            <tr>
+              <td><a href="/users/<%= user.id %>"><%= user.telegram_id %></a></td>
+              <td><%= user.username || "-" %></td>
+              <td><%= [user.first_name, user.last_name].filter(Boolean).join(" ") || "-" %></td>
+              <td><span class="badge <%= user.statusMeta.badgeClass %>"><%= user.statusMeta.label %></span></td>
+              <td><%= user.last_seen_at %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="panel-card">
+    <div class="panel-title-row">
+      <h2>Обязательные подписки</h2>
+      <a class="text-link" href="/subscriptions">Изменить</a>
+    </div>
+    <% if (!requiredSubscriptions.length) { %>
+      <p class="muted">Сейчас обязательных подписок нет. Пользовательский сайт и бот будут открываться без проверки каналов.</p>
+    <% } else { %>
+      <div class="badge-list">
+        <% requiredSubscriptions.forEach((item) => { %>
+          <a class="badge" href="<%= item.url %>" target="_blank" rel="noreferrer"><%= item.title %></a>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <div class="note-box">
+      <strong>Подсказка.</strong>
+      Статусы подписки считаются вживую через Telegram Bot API. Если вместо результата видишь ошибку проверки, обычно боту не хватает прав в канале.
+    </div>
+  </article>
+</section>
+
+<%- include("partials/footer") %>

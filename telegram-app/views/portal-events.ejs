@@ -1,0 +1,85 @@
+<%- include("partials/portal-header", { pageTitle, webUser, activePortalNav }) %>
+<%
+  const portalSortLabel = settings.sortMode === "time_desc"
+    ? "по времени: от дальних к ближайшим"
+    : settings.sortMode === "anarchy_asc"
+      ? "по анархиям: от меньшей к большей"
+      : settings.sortMode === "anarchy_desc"
+        ? "по анархиям: от большей к меньшей"
+        : "по времени: от ближайших к дальним";
+%>
+
+<section class="section-head portal-hero-panel">
+  <div>
+    <div class="eyebrow"><%= mode === "current" ? "Активные события" : mode === "upcoming" ? "Скоро начнутся" : "Полная лента" %></div>
+    <h1><%= pageHeading %></h1>
+    <p><%= pageDescription %></p>
+  </div>
+  <div class="hero-meta">
+    <div class="pill">Обновлено: <%= snapshot.lastUpdatedAt || "нет данных" %></div>
+    <div class="pill">Сортировка: <%= portalSortLabel %></div>
+    <div class="pill">Всего: <%= events.length %></div>
+  </div>
+</section>
+
+<article class="panel-card portal-content-card">
+  <% if (!accessState.allowed) { %>
+    <p><span class="badge <%= accessState.tone === 'ok' ? 'badge-ok' : accessState.tone === 'danger' ? 'badge-danger' : 'badge-muted' %>"><%= accessState.title %></span></p>
+    <p><%= accessState.description %></p>
+
+    <% if (!linkedTelegramUser) { %>
+      <form method="post" action="/site/link" class="stack-form">
+        <button class="primary-button" type="submit">Сгенерировать код привязки Telegram</button>
+      </form>
+      <% if (webUser.link_code) { %>
+        <div class="note-box">
+          <strong>Код привязки:</strong> <code><%= webUser.link_code %></code><br />
+          <span><%- linkInstructions %></span>
+        </div>
+      <% } %>
+    <% } %>
+
+    <% if (subscriptionState.missingCount > 0) { %>
+      <div class="note-box">
+        <strong>Подпишись на каналы ниже, чтобы открыть ивенты:</strong>
+        <ul class="simple-list">
+          <% subscriptionState.missing.forEach((item) => { %>
+            <li><a href="<%= item.url %>" target="_blank" rel="noreferrer"><%= item.title %></a></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+  <% } else if (!events.length) { %>
+    <p class="muted"><%= emptyText %></p>
+  <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Анархия</th>
+            <th>Ивент</th>
+            <th><%= mode === "current" ? "Стадия" : mode === "upcoming" ? "Статус" : "Тип / статус" %></th>
+            <th>Таймер</th>
+            <th>Координаты</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% events.forEach((event) => { %>
+            <tr>
+              <td><%= event.anarchy %></td>
+              <td><%= event.label %></td>
+              <td><%= mode === "current" ? (event.stage || event.statusText || "-") : mode === "upcoming" ? (event.statusText || event.stage || "-") : ([event.type, event.statusText || event.stage].filter(Boolean).join(" • ") || "-") %></td>
+              <td><%= event.timerText || "-" %></td>
+              <td><%= event.coordinates || "-" %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</article>
+
+</main>
+</div>
+</body>
+</html>

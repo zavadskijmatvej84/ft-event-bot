@@ -1,0 +1,50 @@
+<%- include("partials/portal-header", { pageTitle, webUser, activePortalNav }) %>
+
+<section class="section-head portal-hero-panel">
+  <div>
+    <div class="eyebrow">Персонализация</div>
+    <h1>Настройки отображения</h1>
+    <p>Здесь настраиваются фильтры именно для сайта. Telegram-бот хранит свои пользовательские настройки отдельно.</p>
+  </div>
+</section>
+
+<article class="panel-card portal-content-card">
+  <form method="post" action="/site/settings" class="stack-form">
+    <label class="check-row">
+      <input type="checkbox" name="activeOnly" <%= settings.activeOnly ? "checked" : "" %> />
+      <span>Показывать только активные и уже известные ивенты</span>
+    </label>
+
+    <label>
+      Сортировка
+      <select name="sortMode">
+        <option value="time_asc" <%= settings.sortMode === "time_asc" ? "selected" : "" %>>По времени: от ближайших к дальним</option>
+        <option value="time_desc" <%= settings.sortMode === "time_desc" ? "selected" : "" %>>По времени: от дальних к ближайшим</option>
+        <option value="anarchy_asc" <%= settings.sortMode === "anarchy_asc" ? "selected" : "" %>>По анархиям: от меньшей к большей</option>
+        <option value="anarchy_desc" <%= settings.sortMode === "anarchy_desc" ? "selected" : "" %>>По анархиям: от большей к меньшей</option>
+      </select>
+    </label>
+
+    <label>
+      Фильтр ивентов
+      <div class="filter-grid">
+        <% catalog.forEach((eventName) => { %>
+          <label class="check-tile">
+            <input type="checkbox" name="eventFilters" value="<%= eventName %>" <%= settings.eventFilters.includes(eventName) ? "checked" : "" %> />
+            <span><%= eventName %></span>
+          </label>
+        <% }) %>
+      </div>
+    </label>
+
+    <div class="action-row">
+      <a class="ghost-button text-link-button" href="/site/app">Назад</a>
+      <button class="primary-button" type="submit">Сохранить настройки</button>
+    </div>
+  </form>
+</article>
+
+</main>
+</div>
+</body>
+</html>

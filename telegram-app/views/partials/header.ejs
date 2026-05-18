@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %></title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">EV</div>
+        <div>
+          <div class="brand-title">Event Bot Center</div>
+          <div class="brand-subtitle">Telegram bot + admin panel</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-link <%= activeNav === 'dashboard' ? 'active' : '' %>" href="/">Дашборд</a>
+        <a class="nav-link <%= activeNav === 'events' ? 'active' : '' %>" href="/events">Ивенты</a>
+        <a class="nav-link <%= activeNav === 'users' ? 'active' : '' %>" href="/users">Пользователи</a>
+        <a class="nav-link <%= activeNav === 'broadcast' ? 'active' : '' %>" href="/broadcast">Рассылки</a>
+        <a class="nav-link <%= activeNav === 'subscriptions' ? 'active' : '' %>" href="/subscriptions">Подписки</a>
+        <a class="nav-link <%= activeNav === 'settings' ? 'active' : '' %>" href="/settings">Настройки</a>
+      </nav>
+
+      <form method="post" action="/logout" class="logout-form">
+        <button class="ghost-button" type="submit">Выйти</button>
+      </form>
+    </aside>
+
+    <main class="content">

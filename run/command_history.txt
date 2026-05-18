@@ -1,0 +1,10 @@
+/reg bably228
+/login bably228
+/event
+/event delay
+/an201
+/an202
+/event delay
+/register bably228
+/register bably228 bably228
+/login bably228

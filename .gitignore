@@ -1,0 +1,30 @@
+# Build output
+.gradle/
+.gradle-user-home/
+build/
+out/
+
+# Node/runtime
+node_modules/
+
+# Local runtime data
+tmp/
+tmp_video_frames/
+tmp-*.log
+*.log
+
+# Local app state
+telegram-app/data/
+telegram-app/public-site-url.txt
+run/logs/
+
+# Private runtime configs
+telegram-app/config/runtime-config.json
+run/config/funtime-event-watcher.properties
+torti test/
+
+# IDE / OS
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,27 @@
+<%- include("partials/portal-header", { pageTitle, activePortalNav: "auth-login" }) %>
+
+<section class="portal-auth-card">
+  <div class="eyebrow">Авторизация</div>
+  <h1>Вход на сайт</h1>
+  <p class="muted">Войди в аккаунт, чтобы открыть личный кабинет, настройки и страницы с ивентами.</p>
+  <% if (typeof error !== "undefined" && error) { %>
+    <div class="alert"><%= error %></div>
+  <% } %>
+  <form method="post" action="/site/login" class="stack-form">
+    <label>
+      Email
+      <input type="email" name="email" required />
+    </label>
+    <label>
+      Пароль
+      <input type="password" name="password" required />
+    </label>
+    <button class="primary-button" type="submit">Войти</button>
+  </form>
+  <p class="muted">Еще нет аккаунта? <a href="/site/register">Создать</a></p>
+</section>
+
+</main>
+</div>
+</body>
+</html>

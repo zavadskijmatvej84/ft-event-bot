@@ -1,0 +1,30 @@
+<%- include("partials/header", { activeNav, pageTitle }) %>
+
+<section class="section-head">
+  <div>
+    <h1>Глобальная рассылка</h1>
+    <p>Отправка общего сообщения всем незаблокированным пользователям бота.</p>
+  </div>
+</section>
+
+<section class="panel-grid">
+  <article class="panel-card">
+    <h2>Новая рассылка</h2>
+    <form method="post" action="/broadcast" class="stack-form">
+      <textarea name="text" rows="10" placeholder="Текст глобального объявления..." required></textarea>
+      <button class="primary-button" type="submit">Запустить рассылку</button>
+    </form>
+  </article>
+
+  <article class="panel-card">
+    <h2>Последнее административное событие</h2>
+    <% if (!lastEvent) { %>
+      <p class="muted">Пока ничего не запускали.</p>
+    <% } else { %>
+      <pre><%= JSON.stringify(JSON.parse(lastEvent.payload_json || "{}"), null, 2) %></pre>
+      <p class="muted"><%= lastEvent.event_type %> • <%= lastEvent.created_at %></p>
+    <% } %>
+  </article>
+</section>
+
+<%- include("partials/footer") %>

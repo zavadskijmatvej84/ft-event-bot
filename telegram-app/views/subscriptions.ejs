@@ -1,0 +1,82 @@
+<%- include("partials/header", { activeNav, pageTitle }) %>
+
+<section class="section-head">
+  <div>
+    <h1>Обязательные подписки</h1>
+    <p>Пока пользователь не подпишется на все активные каналы, бот и сайт не дадут смотреть ивенты и будут напоминать о подписке.</p>
+  </div>
+</section>
+
+<section class="panel-grid">
+  <article class="panel-card">
+    <h2>Добавить подписку</h2>
+    <form method="post" action="/subscriptions" class="stack-form">
+      <label>
+        <span>Название</span>
+        <input type="text" name="title" placeholder="Основной канал" required />
+      </label>
+      <label>
+        <span>Ссылка</span>
+        <input type="url" name="url" placeholder="https://t.me/your_channel" required />
+      </label>
+      <label>
+        <span>Напоминание</span>
+        <select name="reminderInterval" required>
+          <option value="none">Только один раз при добавлении</option>
+          <option value="minute">Пока не подпишется: раз в 1 минуту</option>
+          <option value="hour">Пока не подпишется: раз в 1 час</option>
+          <option value="day">Пока не подпишется: раз в 1 день</option>
+        </select>
+      </label>
+      <button class="primary-button" type="submit">Добавить</button>
+    </form>
+  </article>
+
+  <article class="panel-card">
+    <h2>Текущий список</h2>
+    <div class="list-stack">
+      <% subscriptions.forEach((item) => { %>
+        <div class="subscription-card">
+          <div>
+            <div class="subscription-title"><%= item.title %></div>
+            <div class="subscription-meta"><a href="<%= item.url %>" target="_blank" rel="noreferrer"><%= item.url %></a></div>
+            <div class="subscription-meta">username: <%= item.username || "не распознан" %></div>
+            <div class="subscription-meta">
+              напоминание:
+              <%= item.reminderInterval === "minute"
+                ? "раз в 1 минуту до подписки"
+                : item.reminderInterval === "hour"
+                  ? "раз в 1 час до подписки"
+                  : item.reminderInterval === "day"
+                    ? "раз в 1 день до подписки"
+                    : "без повторных напоминаний" %>
+            </div>
+            <div class="subscription-meta">статус: <%= item.enabled ? "включена" : "выключена" %></div>
+            <form method="post" action="/subscriptions/<%= item.id %>/reminder" class="stack-form" style="margin-top: 12px;">
+              <label>
+                <span>Изменить интервал</span>
+                <select name="reminderInterval" required>
+                  <option value="none" <%= item.reminderInterval === "none" ? "selected" : "" %>>Только один раз при добавлении</option>
+                  <option value="minute" <%= item.reminderInterval === "minute" ? "selected" : "" %>>Пока не подпишется: раз в 1 минуту</option>
+                  <option value="hour" <%= item.reminderInterval === "hour" ? "selected" : "" %>>Пока не подпишется: раз в 1 час</option>
+                  <option value="day" <%= item.reminderInterval === "day" ? "selected" : "" %>>Пока не подпишется: раз в 1 день</option>
+                </select>
+              </label>
+              <button class="primary-button" type="submit">Сохранить интервал</button>
+            </form>
+          </div>
+          <div class="action-row">
+            <form method="post" action="/subscriptions/<%= item.id %>/toggle">
+              <button class="ghost-button" type="submit"><%= item.enabled ? "Выключить" : "Включить" %></button>
+            </form>
+            <form method="post" action="/subscriptions/<%= item.id %>/delete">
+              <button class="danger-button" type="submit">Удалить</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </article>
+</section>
+
+<%- include("partials/footer") %>

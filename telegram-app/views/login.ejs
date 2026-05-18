@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход в админку</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="brand brand-login">
+      <div class="brand-mark">FT</div>
+      <div>
+        <div class="brand-title">Funtime Telegram Center</div>
+        <div class="brand-subtitle">Вход в веб-панель</div>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <form method="post" action="/login" class="stack-form">
+      <label>
+        <span>Логин</span>
+        <input type="text" name="username" placeholder="admin" required />
+      </label>
+      <label>
+        <span>Пароль</span>
+        <input type="password" name="password" placeholder="********" required />
+      </label>
+      <button class="primary-button" type="submit">Войти</button>
+    </form>
+  </div>
+</body>
+</html>

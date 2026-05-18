@@ -1,0 +1,40 @@
+<%- include("partials/header", { activeNav, pageTitle }) %>
+
+<section class="section-head">
+  <div>
+    <h1>Живые ивенты</h1>
+    <p>Снимок строится по <code>latest.log</code> текущего чекера и показывает последнее известное состояние по анархиям.</p>
+  </div>
+  <div class="pill">Обновлено: <%= snapshot.lastUpdatedAt || "нет данных" %></div>
+</section>
+
+<article class="panel-card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Анархия</th>
+          <th>Тип</th>
+          <th>Ивент</th>
+          <th>Таймер</th>
+          <th>Координаты</th>
+          <th>Обновлено</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% flattened.forEach((event) => { %>
+          <tr>
+            <td><%= event.anarchy %></td>
+            <td><%= event.type %></td>
+            <td><%= event.label %><%= event.stage ? ` / ${event.stage}` : "" %></td>
+            <td><%= event.timerText || event.statusText || "-" %></td>
+            <td><%= event.coordinates || "-" %></td>
+            <td><%= event.updatedAtLabel || "-" %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<%- include("partials/footer") %>

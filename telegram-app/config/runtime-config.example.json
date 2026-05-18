@@ -1,0 +1,16 @@
+{
+  "botToken": "PASTE_TELEGRAM_BOT_TOKEN",
+  "panelPort": 3080,
+  "panelHost": "127.0.0.1",
+  "adminUsername": "admin",
+  "adminPassword": "change_me_please",
+  "checkerLogPath": "E:\\\\path\\\\to\\\\run\\\\logs\\\\latest.log",
+  "timeZone": "Europe/Moscow",
+  "snapshotSourceMode": "push",
+  "eventIngestToken": "generate_a_secret_token_here",
+  "requiredSubscriptions": [],
+  "knownEvents": [
+    "Air Drop"
+  ]
+}
+

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "funtimewatcher",
+  "version": "${version}",
+  "name": "Funtime Event Watcher",
+  "description": "In-game Funtime event watcher with a Right Shift control screen.",
+  "authors": [
+    "Codex"
+  ],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "ru.sergey.funtimewatcher.client.FuntimeWatcherClient"
+    ]
+  },
+  "mixins": [
+    "funtimewatcher.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.3",
+    "minecraft": "~1.21.8",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

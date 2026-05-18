@@ -1,0 +1,50 @@
+<%- include("partials/header", { activeNav, pageTitle }) %>
+
+<section class="section-head">
+  <div>
+    <h1>Пользователи</h1>
+    <p>Здесь можно искать людей, видеть их статус подписки и вручную блокировать или разблокировать доступ.</p>
+  </div>
+  <form class="search-form" method="get" action="/users">
+    <input type="text" name="search" value="<%= search %>" placeholder="Поиск по ID, нику или имени" />
+    <button class="primary-button" type="submit">Найти</button>
+  </form>
+</section>
+
+<article class="panel-card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Имя</th>
+          <th>Статус</th>
+          <th>Последняя активность</th>
+          <th>Действие</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach((user) => { %>
+          <tr>
+            <td><a href="/users/<%= user.id %>"><%= user.telegram_id %></a></td>
+            <td><%= user.username || "-" %></td>
+            <td><%= [user.first_name, user.last_name].filter(Boolean).join(" ") || "-" %></td>
+            <td><span class="badge <%= user.statusMeta.badgeClass %>"><%= user.statusMeta.label %></span></td>
+            <td><%= user.last_seen_at %></td>
+            <td>
+              <form method="post" action="/users/<%= user.id %>/toggle-block">
+                <input type="hidden" name="backTo" value="list" />
+                <button class="<%= user.is_blocked && user.block_reason === 'manual' ? 'ghost-button' : 'danger-button' %>" type="submit">
+                  <%= user.is_blocked && user.block_reason === "manual" ? "Разблокировать" : "Заблокировать" %>
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<%- include("partials/footer") %>

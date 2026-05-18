@@ -1,0 +1,35 @@
+<%- include("partials/portal-header", { pageTitle, activePortalNav: "auth-register" }) %>
+
+<section class="portal-auth-card">
+  <div class="eyebrow">Регистрация</div>
+  <h1>Регистрация</h1>
+  <p class="muted">Создай аккаунт, затем привяжи Telegram и подпишись на обязательные каналы из админ-панели.</p>
+  <% if (typeof error !== "undefined" && error) { %>
+    <div class="alert"><%= error %></div>
+  <% } %>
+  <form method="post" action="/site/register" class="stack-form">
+    <label>
+      Имя
+      <input type="text" name="displayName" value="<%= (typeof values !== 'undefined' && values && values.displayName) || '' %>" required />
+    </label>
+    <label>
+      Email
+      <input type="email" name="email" value="<%= (typeof values !== 'undefined' && values && values.email) || '' %>" required />
+    </label>
+    <label>
+      Пароль
+      <input type="password" name="password" required />
+    </label>
+    <label>
+      Повтори пароль
+      <input type="password" name="confirmPassword" required />
+    </label>
+    <button class="primary-button" type="submit">Создать аккаунт</button>
+  </form>
+  <p class="muted">Уже есть аккаунт? <a href="/site/login">Войти</a></p>
+</section>
+
+</main>
+</div>
+</body>
+</html>

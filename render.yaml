@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: funtime-event-bot
+    runtime: node
+    plan: free
+    rootDir: telegram-app
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /site
+    envVars:
+      - key: PANEL_HOST
+        value: 0.0.0.0
+      - key: SNAPSHOT_SOURCE_MODE
+        value: push
+      - key: TIME_ZONE
+        value: Europe/Moscow
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: EVENT_INGEST_TOKEN
+        sync: false

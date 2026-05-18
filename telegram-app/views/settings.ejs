@@ -1,0 +1,40 @@
+<%- include("partials/header", { activeNav, pageTitle }) %>
+
+<section class="section-head">
+  <div>
+    <h1>Системные настройки</h1>
+    <p>Локальные параметры панели и источника ивентов.</p>
+  </div>
+</section>
+
+<article class="panel-card">
+  <form method="post" action="/settings" class="stack-form">
+    <label>
+      <span>Host панели</span>
+      <input type="text" name="panelHost" value="<%= config.panelHost %>" required />
+    </label>
+    <label>
+      <span>Port панели</span>
+      <input type="number" name="panelPort" value="<%= config.panelPort %>" required />
+    </label>
+    <label>
+      <span>Логин администратора</span>
+      <input type="text" name="adminUsername" value="<%= config.adminUsername %>" required />
+    </label>
+    <label>
+      <span>Пароль администратора</span>
+      <input type="text" name="adminPassword" value="<%= config.adminPassword %>" required />
+    </label>
+    <label>
+      <span>Путь к latest.log чекера</span>
+      <input type="text" name="checkerLogPath" value="<%= config.checkerLogPath %>" required />
+    </label>
+    <label>
+      <span>Известные названия ивентов</span>
+      <textarea name="knownEvents" rows="8"><%= (config.knownEvents || []).join("\n") %></textarea>
+    </label>
+    <button class="primary-button" type="submit">Сохранить настройки</button>
+  </form>
+</article>
+
+<%- include("partials/footer") %>
